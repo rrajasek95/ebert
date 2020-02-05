@@ -5,7 +5,7 @@ from flask import (
     current_app
 )
 
-from .message import call_send_api
+from .message import call_send_api, generate_echo_message
 
 bp = Blueprint('bot', __name__)
 
@@ -29,17 +29,6 @@ def handle_verification():
 
 def send_message(response, app):
     call_send_api(response, app)
-
-
-def generate_echo_message(sender_ps_id, message):
-    return {
-        "recipient": {
-            "id": sender_ps_id
-        },
-        "message": {
-            "text": message
-        }
-    }
     
 
 def handle_text_message(event, app):

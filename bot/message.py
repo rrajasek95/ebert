@@ -2,6 +2,18 @@ import os
 import requests
 import json
 
+
+def generate_echo_message(sender_ps_id, message):
+    return {
+        "recipient": {
+            "id": sender_ps_id
+        },
+        "message": {
+            "text": message
+        }
+    }
+
+
 def call_send_api(request, app):
     url = "https://graph.facebook.com/v6.0/me/messages?access_token=%s" % os.getenv('PAGE_ACCESS_TOKEN', '')
     app.logger.info("POST to URL : %s" % url)
