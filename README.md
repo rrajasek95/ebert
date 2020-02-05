@@ -1,5 +1,6 @@
 # EBERT: A Knowledge Grounded: Neural Movie Chatbot
 
+![master](https://github.com/rrajasek95/ebert/workflows/Python%20application/badge.svg?branch=master&event=push)
 
 ## Local Execution Instructions
 Create a `.env` file with the following contents or use the respective environment variables
