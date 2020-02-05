@@ -1,7 +1,7 @@
 import os
 
 from flask import (
-    Blueprint, request, jsonify,
+    Blueprint, request,
     current_app
 )
 
