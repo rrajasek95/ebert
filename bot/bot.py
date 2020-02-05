@@ -1,4 +1,4 @@
-import os, requests
+import os, requests, json
 
 from concurrent.futures import ThreadPoolExecutor
 
@@ -30,9 +30,9 @@ def handle_verification():
 def call_send_api(request):
     url = "https://graph.facebook.com/v6.0/me/messages?access_token=%s" % os.getenv('PAGE_ACCESS_TOKEN', '')
     print("POST to URL : %s" % url)
-    print("Payload: %s" % request)
+    print("Payload: %s" % json.dumps(request))
 
-    r = requests.post(url, data=request)
+    r = requests.post(url, json=request)
     print(r.status_code)
     print(r.text)
 
@@ -45,7 +45,9 @@ def generate_echo_message(sender_ps_id, message):
         "recipient": {
             "id": sender_ps_id
         },
-        "message": message
+        "message": {
+            "text": message
+        }
     }
     
 
@@ -76,8 +78,9 @@ def handle_message():
             event = entry['messaging'][0]
             current_app.logger.info(event)
             current_app.logger.info("Submitting job to executor")
-            handle_text_message(event, current_app)
-            # current_app.config['EXECUTOR'].submit(handle_text_message, event, current_app)
+            
+            # handle_text_message(event, current_app)
+            current_app.config['EXECUTOR'].submit(handle_text_message, event, current_app)
         return 'EVENT_RECEIVED'
     else:
         return 'Page Not Found', 404
