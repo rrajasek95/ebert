@@ -1,11 +1,11 @@
-import os, requests, json
-
-from concurrent.futures import ThreadPoolExecutor
+import os
 
 from flask import (
     Blueprint, request, jsonify,
     current_app
 )
+
+from .message import call_send_api
 
 bp = Blueprint('bot', __name__)
 
@@ -27,17 +27,8 @@ def handle_verification():
     else:
         return 'Forbidden', 403
 
-def call_send_api(request):
-    url = "https://graph.facebook.com/v6.0/me/messages?access_token=%s" % os.getenv('PAGE_ACCESS_TOKEN', '')
-    print("POST to URL : %s" % url)
-    print("Payload: %s" % json.dumps(request))
-
-    r = requests.post(url, json=request)
-    print(r.status_code)
-    print(r.text)
-
-def send_message(response):
-    call_send_api(response)
+def send_message(response, app):
+    call_send_api(response, app)
 
 
 def generate_echo_message(sender_ps_id, message):
@@ -61,7 +52,7 @@ def handle_text_message(event, app):
 
     response = generate_echo_message(sender_ps_id, message)
 
-    send_message(response)
+    send_message(response, app)
 
 
 
@@ -78,9 +69,8 @@ def handle_message():
             event = entry['messaging'][0]
             current_app.logger.info(event)
             current_app.logger.info("Submitting job to executor")
-            
-            # handle_text_message(event, current_app)
-            current_app.config['EXECUTOR'].submit(handle_text_message, event, current_app)
+            handle_text_message(event, current_app)
+            # current_app.config['EXECUTOR'].submit(handle_text_message, event, current_app)
         return 'EVENT_RECEIVED'
     else:
         return 'Page Not Found', 404
