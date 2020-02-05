@@ -29,10 +29,10 @@ def handle_verification():
 
 def call_send_api(request):
     url = "https://graph.facebook.com/v6.0/me/messages?access_token=%s" % os.getenv('PAGE_ACCESS_TOKEN', '')
-    current_app.logger.info("POST to URL : %s" % url)
-    current_app.logger.info("Payload: %s" % request)
+    print("POST to URL : %s" % url)
+    print("Payload: %s" % request)
 
-    requests.post(url, data=request)
+    r = requests.post(url, data=request)
 
 def send_message(response):
     call_send_api(response)
@@ -47,9 +47,9 @@ def generate_echo_message(sender_ps_id, message):
     }
     
 
-def handle_text_message(event):
+def handle_text_message(event, app):
     sender_ps_id = event["sender"]["id"]
-    current_app.logger.info("Received text %s" % message["message"]["text"])
+    app.logger.info("Received text %s" % event["message"]["text"])
 
     greeting = first_entity(event["message"]["nlp"], "greetings")
 
@@ -64,17 +64,18 @@ def handle_text_message(event):
 
 
 def first_entity(nlp, name):
-    return nlp and nlp["entities"] and nlp["entities"][name] and nlp["entities"][name][0]
+    return nlp and nlp.get("entities", {}).get(name, [None])[0]
 
 def handle_message():
     content = request.json
     
     if content['object'] == "page":
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            for entry in content['entry']:
-                event = entry['messaging'][0]
-                current_app.logger.info(event)
-                executor.submit(handle_text_message, event)
+        for entry in content['entry']:
+            event = entry['messaging'][0]
+            current_app.logger.info(event)
+            current_app.logger.info("Submitting job to executor")
+            handle_text_message(event, current_app)
+            # current_app.config['EXECUTOR'].submit(handle_text_message, event, current_app)
         return 'EVENT_RECEIVED'
     else:
         return 'Page Not Found', 404
