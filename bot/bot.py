@@ -33,6 +33,8 @@ def call_send_api(request):
     print("Payload: %s" % request)
 
     r = requests.post(url, data=request)
+    print(r.status_code)
+    print(r.text)
 
 def send_message(response):
     call_send_api(response)
