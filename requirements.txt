@@ -2,7 +2,6 @@ attrs==19.3.0
 certifi==2019.11.28
 chardet==3.0.4
 Click==7.0
--e git+https://github.com/rrajasek95/ebert@7e3fceaf8549cf16bc174a9a1e297355616d1a0a#egg=ebert
 Flask==1.1.1
 Flask-Executor==0.9.3
 gunicorn==20.0.4
