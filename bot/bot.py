@@ -1,7 +1,10 @@
-import os
+import os, requests
+
+from concurrent.futures import ThreadPoolExecutor
 
 from flask import (
-    Blueprint, request, jsonify
+    Blueprint, request, jsonify,
+    current_app
 )
 
 bp = Blueprint('bot', __name__)
@@ -24,14 +27,54 @@ def handle_verification():
     else:
         return 'Forbidden', 403
 
+def call_send_api(request):
+    url = "https://graph.facebook.com/v6.0/me/messages?access_token=%s" % os.getenv('PAGE_ACCESS_TOKEN', '')
+    current_app.logger.info("POST to URL : %s" % url)
+    current_app.logger.info("Payload: %s" % request)
+
+    requests.post(url, data=request)
+
+def send_message(response):
+    call_send_api(response)
+
+
+def generate_echo_message(sender_ps_id, message):
+    return {
+        "recipient": {
+            "id": sender_ps_id
+        },
+        "message": message
+    }
+    
+
+def handle_text_message(event):
+    sender_ps_id = event["sender"]["id"]
+    current_app.logger.info("Received text %s" % message["message"]["text"])
+
+    greeting = first_entity(event["message"]["nlp"], "greetings")
+
+    message = event["message"]["text"].strip().lower()
+
+    response = generate_echo_message(sender_ps_id, message)
+
+    send_message(response)
+
+
+
+
+
+def first_entity(nlp, name):
+    return nlp and nlp["entities"] and nlp["entities"][name] and nlp["entities"][name][0]
 
 def handle_message():
     content = request.json
     
     if content['object'] == "page":
-        for entry in content['entry']:
-            event = entry['messaging'][0]
-            print(event)
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            for entry in content['entry']:
+                event = entry['messaging'][0]
+                current_app.logger.info(event)
+                executor.submit(handle_text_message, event)
         return 'EVENT_RECEIVED'
     else:
         return 'Page Not Found', 404
