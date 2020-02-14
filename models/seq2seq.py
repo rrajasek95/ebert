@@ -9,7 +9,8 @@ class Encoder(nn.Module):
         n_layers,
         dropout
         ):
-
+        super().__init__()
+        
         self.hid_dim = hid_dim
         self.n_layers = n_layers
 
