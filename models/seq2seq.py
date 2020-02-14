@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import random
 
 class Encoder(nn.Module):
     def __init__(
@@ -23,7 +24,7 @@ class Encoder(nn.Module):
 
     def forward(self, src):
         #src = [src len, batch size]
-        embedded = self.droupout(self.embedding(src))
+        embedded = self.dropout(self.embedding(src))
 
         #embedded = [src len, batch size, emb dim]
 
