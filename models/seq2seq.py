@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 class Encoder(nn.Module):
@@ -10,7 +11,7 @@ class Encoder(nn.Module):
         dropout
         ):
         super().__init__()
-        
+
         self.hid_dim = hid_dim
         self.n_layers = n_layers
 
