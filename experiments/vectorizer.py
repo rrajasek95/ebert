@@ -67,3 +67,18 @@ class SequenceVectorizer():
             word = self.vocab.lookup_index(token.item())
             sequence.append(word)
         return sequence
+
+class OneHotVocabVectorizer(object):
+    # Vectorizer that accepts a vocabulary of words and performs one-hot encoding of an utterance
+
+    def __init__(self, vocabulary, dtype=np.float32):
+        self.vocabulary = vocabulary
+        self.dtype = dtype
+
+    def vectorize(self, utterance):
+        one_hot = np.zeros(len(self.vocabulary), dtype=self.dtype)
+
+        for token in utterance.split(" "):
+            if token not in string.punctuation:
+                one_hot[self.vocabulary.lookup_token(token)] = 1
+        return one_hot

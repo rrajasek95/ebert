@@ -3,7 +3,7 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 
-from dataset import HredDataset, MixedShortDataset
+from dataset import HredDataset, MixedShortDataset, MemNetDataset
 import os
 import json
 import logging
@@ -24,7 +24,8 @@ def count_parameters(model):
     return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 def load_bidaf_train_data(args):
-    path = os.path.join(args.data_dir, 
+    path = os.path.join(args.data_dir,
+        'experiment_data',
         'bidaf',
         'mixed_short',
         'train-v1.1.json')
@@ -41,6 +42,7 @@ def load_bidaf_train_data(args):
 
 def load_hred_dataset(args, filename, vectorizer):
     path = os.path.join(args.data_dir,
+        'experiment_data',
         'hred',
         filename)
 
@@ -53,6 +55,19 @@ def load_hred_dataset(args, filename, vectorizer):
     dataset = HredDataset(contexts, responses, vectorizer, args.device)
 
     return dataset
+
+def load_memnet_train_data(args, vectorizer):
+    path = os.path.join(args.data_dir,
+        'memnet_data',
+        'train.json')
+
+    with open(path, 'r') as train_file:
+        data = json.load(train_file)
+
+    dataset = MemNetDataset(data, vectorizer)
+
+    return dataset
+
 
 def load_hred_vocabulary(args):
     path = os.path.join(args.data_dir,
@@ -67,6 +82,14 @@ def load_hred_vocabulary(args):
 
     return vocab
 
+def load_memnet_vocabulary(args):
+    vocab_path = os.path.join(args.data_dir,
+        'memnet_data',
+        'vocab.pkl')
+    with open(vocab_path, 'rb') as vocab_file:
+        vocab = pkl.load(vocab_file)
+
+    return vocab
 
 def create_hred_model(args, vocab):
     word_encoder = hred.WordEncoder(
@@ -84,11 +107,15 @@ def create_hred_model(args, vocab):
     
     return seq2seq
 
+def create_memnet_model(args, in_vocab, out_vocab):
+    pass
+
+
 def base_parser():
     parser = argparse.ArgumentParser(
         description="Run the experiments for the models with knowledge on the Holl-E dataset")
     parser.add_argument("--data_dir",
-        default="holle/experiment_data/")
+        default="holle/")
     parser.add_argument("--n_epochs", default=20, 
         type=int, help="Number of epochs to train the model for")
     parser.add_argument('--learning_rate', default=0.5, 
@@ -118,6 +145,18 @@ def hred_parser():
     parser.add_argument("--bidirectional", default=True,
         type=bool, help="Bidirectional model config")
     return parser
+
+def run_memnet_experiment(args):
+    vocab = load_memnet_vocabulary(args)
+
+    VEC = SequenceVectorizer(
+        vocab,
+        init_token="[BOS]",
+        eos_token="[EOS]",
+        pad_token="[PAD]"
+        )
+
+    train_dataset = load_memnet_train_data(args, vectorizer)
 
 def run_hred_experiment(args):
     (hred_args, extras) = hred_parser().parse_known_args()

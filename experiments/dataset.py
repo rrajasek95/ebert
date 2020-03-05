@@ -12,6 +12,7 @@ class MixedShortDataset(Dataset):
         utterance = qa["question"]
         response = qa["answers"][0]["text"]
 
+
 class HredDataset(Dataset):
     def __init__(self, contexts, responses,
         vectorizer, device):
@@ -37,3 +38,25 @@ class HredDataset(Dataset):
 
     def get_num_batches(self, batch_size):
         return len(self) // batch_size
+
+
+class MemNetDataset(Dataset):
+    def __init__(self, data, vectorizer, device):
+        self.data = data
+        self.vectorizer = vectorizer
+        self.device = device
+
+    def __getitem__(self, index):
+        context = self.data[index]['context']
+        response = self.data[index]['response']
+        facts = self[index]['facts']
+
+        
+        x_lengths = [len(c) for c in context.split(" ")]
+
+        y_target = self.vectorizer.vectorize(response, self.device)
+
+        return {
+            "x_data": x_data,
+            "y_target": y_target
+        }
