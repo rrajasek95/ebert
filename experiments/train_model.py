@@ -79,7 +79,7 @@ def train_memnet_model(model, optimizer, loss_func, loaders, args):
 
         validation_loss = 0.
         model.eval()
-        for batch_idx, batch in enumerate(loaders.val):
+        for batch_idx, batch in enumerate(loaders.dev):
             y_pred = model(batch['x_data'], batch['x_facts'], batch['y_target'], 0.)
             out_size = y_pred.shape[-1]
             reshaped_target = batch['y_target'][1:].flatten()

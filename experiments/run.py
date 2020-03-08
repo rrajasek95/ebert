@@ -154,7 +154,7 @@ def base_parser():
         description="Run the experiments for the models with knowledge on the Holl-E dataset")
     parser.add_argument("--data_dir",
         default="holle/")
-    parser.add_argument("--n_epochs", default=20, 
+    parser.add_argument("--n_epochs", default=10, 
         type=int, help="Number of epochs to train the model for")
     parser.add_argument('--learning_rate', default=0.5, 
         type=float, help='Learning rate for the model')
