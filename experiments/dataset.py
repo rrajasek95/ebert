@@ -53,7 +53,7 @@ class MemNetDataset(Dataset):
         response = self.data[index]['response']
         facts = self.data[index]['facts']
 
-        x_data = self.vectorizer.vectorize(context[-1], self.device)
+        x_data = self.vectorizer.vectorize(" ".join(context), self.device)
 
         x_lengths = [len(c) for c in context]
         x_facts = torch.stack([self.factvectorizer.vectorize(c, self.device) for c in facts])

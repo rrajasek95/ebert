@@ -87,6 +87,7 @@ def load_memnet_test_data(args, contextvectorizer, factvectorizer):
 
 def load_hred_vocabulary(args):
     path = os.path.join(args.data_dir,
+        'experiment_data',
         'hred',
         'words.pkl')
 
@@ -156,7 +157,7 @@ def base_parser():
         default="holle/")
     parser.add_argument("--n_epochs", default=10, 
         type=int, help="Number of epochs to train the model for")
-    parser.add_argument('--learning_rate', default=0.5, 
+    parser.add_argument('--learning_rate', default=0.1, 
         type=float, help='Learning rate for the model')
     parser.add_argument('--train_batch_size', default=16, 
         type=int, help='Batch size for train')
@@ -166,6 +167,11 @@ def base_parser():
         type=int, help='Batch size for test')
     parser.add_argument('--model', default="hred",
         choices=['hred', 'memnet'], help='Model to train')
+    parser.add_argument('--checkpoint_dir', default="checkpoints/",
+        help="Path to save model checkpoints to")
+
+    parser.add_argument('--run_dir', default="runs/",
+        help="Directory to store run information for tensorboard")
 
     parser.add_argument('--debug', action='store_true',
         help='Display debug output')
