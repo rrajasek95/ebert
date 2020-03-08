@@ -1,5 +1,6 @@
 from vocabulary import Vocabulary
 import torch
+import numpy as np
 import logging
 
 def split_tokenizer(x):
@@ -49,7 +50,6 @@ class SequenceVectorizer():
             tokens.append(self.eos_token)
         if self.reverse:
             tokens = list(reversed(tokens))
-        logging.debug("Tokens: {}".format(tokens))
 
         seq_tensor = torch.zeros((len(tokens)), dtype=torch.long)
         
@@ -57,7 +57,6 @@ class SequenceVectorizer():
             idx = self.vocab.lookup_token(token)
             seq_tensor[i] = idx
 
-        logging.debug("Tensor: {}".format(seq_tensor))
         return seq_tensor.to(device)
 
     def vector_to_sequence(self, input, length):
@@ -68,17 +67,18 @@ class SequenceVectorizer():
             sequence.append(word)
         return sequence
 
+
 class OneHotVocabVectorizer(object):
     # Vectorizer that accepts a vocabulary of words and performs one-hot encoding of an utterance
 
-    def __init__(self, vocabulary, dtype=np.float32):
-        self.vocabulary = vocabulary
+    def __init__(self, vocabulary, dtype=torch.float32, tokenizer=split_tokenizer):
+        self.vocab = vocabulary
         self.dtype = dtype
+        self.tokenizer = tokenizer
 
-    def vectorize(self, utterance):
-        one_hot = np.zeros(len(self.vocabulary), dtype=self.dtype)
+    def vectorize(self, utterance, device="cpu"):
+        one_hot = torch.zeros(len(self.vocab), dtype=self.dtype)
 
-        for token in utterance.split(" "):
-            if token not in string.punctuation:
-                one_hot[self.vocabulary.lookup_token(token)] = 1
-        return one_hot
+        for token in self.tokenizer(utterance):
+            one_hot[self.vocab.lookup_token(token)] = 1
+        return one_hot.to(device)

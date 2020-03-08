@@ -90,7 +90,7 @@ def generate_memnet_vocabulary():
 
     vocab = Vocabulary.from_documents(docs)
 
-    with open('vocab.pkl', 'wb') as vocab_file:
+    with open('memnet_data/vocab.pkl', 'wb') as vocab_file:
         pickle.dump(vocab, vocab_file)
 
 

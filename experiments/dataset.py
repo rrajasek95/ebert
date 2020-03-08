@@ -1,3 +1,4 @@
+import torch
 from torch.utils.data import Dataset
 import logging
 
@@ -41,22 +42,31 @@ class HredDataset(Dataset):
 
 
 class MemNetDataset(Dataset):
-    def __init__(self, data, vectorizer, device):
+    def __init__(self, data, vectorizer, factvectorizer, device):
         self.data = data
         self.vectorizer = vectorizer
+        self.factvectorizer = factvectorizer
         self.device = device
 
     def __getitem__(self, index):
         context = self.data[index]['context']
         response = self.data[index]['response']
-        facts = self[index]['facts']
+        facts = self.data[index]['facts']
 
-        
-        x_lengths = [len(c) for c in context.split(" ")]
+        x_data = self.vectorizer.vectorize(context[-1], self.device)
 
+        x_lengths = [len(c) for c in context]
+        x_facts = torch.stack([self.factvectorizer.vectorize(c, self.device) for c in facts])
         y_target = self.vectorizer.vectorize(response, self.device)
 
         return {
             "x_data": x_data,
+            "x_facts": x_facts,
             "y_target": y_target
         }
+
+    def __len__(self):
+        return len(self.data)
+
+    def get_num_batches(self, batch_size):
+        return len(self) // batch_size

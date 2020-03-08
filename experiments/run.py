@@ -10,14 +10,14 @@ import logging
 import pickle as pkl
 
 from vocabulary import Vocabulary
-from vectorizer import SequenceVectorizer
-from loader import prepare_hred_dataloader
+from vectorizer import SequenceVectorizer, OneHotVocabVectorizer
+from loader import prepare_hred_dataloader, prepare_memnet_dataloader
 
 import train_model
 
 import models.hred as hred
+import models.memnet as memnet
 
-# logging.basicConfig(level=logging.DEBUG)
 
 
 def count_parameters(model):
@@ -56,15 +56,31 @@ def load_hred_dataset(args, filename, vectorizer):
 
     return dataset
 
-def load_memnet_train_data(args, vectorizer):
+def load_memnet_data(args, filename):
     path = os.path.join(args.data_dir,
         'memnet_data',
-        'train.json')
+        filename)
 
     with open(path, 'r') as train_file:
         data = json.load(train_file)
 
-    dataset = MemNetDataset(data, vectorizer)
+    return data
+
+def load_memnet_train_data(args, contextvectorizer, factvectorizer):
+    data = load_memnet_data(args, 'train_data.json')
+    dataset = MemNetDataset(data, contextvectorizer, factvectorizer, args.device)
+
+    return dataset
+
+def load_memnet_dev_data(args, contextvectorizer, factvectorizer):
+    data = load_memnet_data(args, 'dev_data.json')
+    dataset = MemNetDataset(data, contextvectorizer, factvectorizer, args.device)
+
+    return dataset
+
+def load_memnet_test_data(args, contextvectorizer, factvectorizer):
+    data = load_memnet_data(args, 'test_data.json')
+    dataset = MemNetDataset(data, contextvectorizer, factvectorizer, args.device)
 
     return dataset
 
@@ -107,8 +123,30 @@ def create_hred_model(args, vocab):
     
     return seq2seq
 
-def create_memnet_model(args, in_vocab, out_vocab):
-    pass
+def create_memnet_model(args, utt_vocab, fact_vocab):
+    sentence_encoder = memnet.SentenceEncoder(
+        input_size=len(utt_vocab),
+        embed_size=args.embed_size,
+        hidden_size=args.word_hidden_size,
+        bidirectional=args.bidirectional,
+        dropout=args.dropout)
+
+    fact_encoder = memnet.FactEncoder(
+        input_size=len(fact_vocab),
+        embed_size=args.embed_size)
+
+    input_encoder = memnet.InputEncoder(
+        sentence_encoder,
+        fact_encoder)
+
+    decoder = memnet.Decoder(
+        output_size=len(utt_vocab),
+        embed_size=args.embed_size,
+        hidden_size=args.word_hidden_size)
+
+    seq2seq = memnet.LSTMSeq2Seq(input_encoder, decoder, args.device)
+
+    return seq2seq
 
 
 def base_parser():
@@ -127,7 +165,10 @@ def base_parser():
     parser.add_argument('--test_batch_size', default=16, 
         type=int, help='Batch size for test')
     parser.add_argument('--model', default="hred",
-        choices=['hred'], help='Model to train')
+        choices=['hred', 'memnet'], help='Model to train')
+
+    parser.add_argument('--debug', action='store_true',
+        help='Display debug output')
 
     return parser
 
@@ -146,7 +187,27 @@ def hred_parser():
         type=bool, help="Bidirectional model config")
     return parser
 
+def memnet_parser():
+    parser = argparse.ArgumentParser(
+        description="Parameters for memnet")
+    parser.add_argument("--word_hidden_size", default=100,
+        type=int, help="Hidden size of word encoder")
+    parser.add_argument("--context_hidden_size", default=100,
+        type=int, help="Hidden size of context encoder")
+    parser.add_argument("--decoder_hidden_size", default=100,
+        type=int, help="Hidden size of decoder")
+    parser.add_argument("--embed_size", default=100,
+        type=int, help="Token embedding dimension")
+    parser.add_argument("--bidirectional", default=False,
+        type=bool, help="Bidirectional model config")
+    parser.add_argument("--dropout", default=0.1,
+        type=float, help="Dropout probability for weights")
+
+    return parser
+
+
 def run_memnet_experiment(args):
+    (memnet_args, extras) = memnet_parser().parse_known_args()
     vocab = load_memnet_vocabulary(args)
 
     VEC = SequenceVectorizer(
@@ -156,7 +217,29 @@ def run_memnet_experiment(args):
         pad_token="[PAD]"
         )
 
-    train_dataset = load_memnet_train_data(args, vectorizer)
+    FACTVEC = OneHotVocabVectorizer(vocab)
+
+    logging.debug("Loading train dataset")
+    train_dataset = load_memnet_train_data(args, VEC, FACTVEC)
+    logging.debug("Loading dev dataset")
+    dev_dataset = load_memnet_dev_data(args, VEC, FACTVEC)
+    logging.debug("Loading test dataset")
+    test_dataset = load_memnet_test_data(args, VEC, FACTVEC)
+
+    datasets = argparse.Namespace(
+        train=train_dataset,
+        dev=dev_dataset,
+        test=test_dataset)
+
+    loaders = prepare_memnet_dataloader(datasets, VEC, FACTVEC, args)
+    memnet_args.device = args.device
+
+    model = create_memnet_model(memnet_args, VEC.vocab, FACTVEC.vocab)
+    model.to(args.device)
+    logging.info("Model parameters: {}".format(count_parameters(model)))
+    optimizer = optim.Adam(model.parameters())
+    loss_func = nn.CrossEntropyLoss()
+    train_model.train_memnet_model(model, optimizer, loss_func, loaders, args)
 
 def run_hred_experiment(args):
     (hred_args, extras) = hred_parser().parse_known_args()
@@ -195,9 +278,12 @@ def run_hred_experiment(args):
 def main():
     (args, extras) = base_parser().parse_known_args()
     args.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logging.basicConfig(level=logging.DEBUG if args.debug else logging.INFO)
 
     if args.model == "hred":
         run_hred_experiment(args)
+    if args.model == "memnet":
+        run_memnet_experiment(args)
 
 if __name__ == '__main__':
     main()
