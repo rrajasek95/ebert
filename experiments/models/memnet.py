@@ -29,7 +29,8 @@ class SentenceEncoder(nn.Module):
         self.embedding = nn.Embedding(input_size, embed_size)
         self.rnn = nn.GRU(
             input_size=embed_size, 
-            hidden_size=hidden_size, 
+            hidden_size=hidden_size,
+            num_layers=num_layers,
             batch_first=True, bidirectional=bidirectional)
         self.hidden_size = hidden_size
 
@@ -40,10 +41,10 @@ class SentenceEncoder(nn.Module):
         # embedded: [batch_size, seq_len, embed_size]
         logging.debug("embedded: {}".format(embedded.shape))
         output, hidden = self.rnn(embedded)
-        logging.debug("hidden: {}".format(hidden.shape))
+        logging.debug("hidden: {}".format(output.shape))
 
-        # hidden : [num_dirs, batch_size, hidden_size]
-        return hidden
+        # output : [batch_size, seq_len,  num_directions * hidden_size  ]
+        return output[:, -1] # [batch_size, num_directions * hidden_size]
 
 class FactEncoder(nn.Module):
     def __init__(self,
@@ -75,11 +76,13 @@ class InputEncoder(nn.Module):
     def forward(self, sentence, context):
         logging.debug("Inputencoder: {}".format(sentence.shape))
         logging.debug("Inputencoder context: {}".format(context.shape))
-        encoded_sentence = self.sentence_encoder(sentence).transpose(0, 1).reshape(sentence.shape[0], -1, 1)
+        encoded_sentence = self.sentence_encoder(sentence).unsqueeze(2)
         # [num_dirs, batch_size, hidden_size]
 
         encoded_key, encoded_value = self.fact_encoder(context)
-        # [batch_size, num_facts, embed_size]
+
+        # [batch_size, 1, num_directions * hidden_size]
+        # [batch_size, num_facts, embed_size = ]
         encoded_key = encoded_key
         encoded_value = encoded_value
         logging.debug(encoded_sentence.shape)
@@ -134,7 +137,7 @@ class LSTMSeq2Seq(nn.Module):
         self.decoder = decoder
         self.device = device
 
-    def forward(self, source, context, target, teacher_forcing_ratio=0.5):
+    def forward(self, source, context, target, loss_func, teacher_forcing_ratio=0.):
         outputs = torch.zeros(len(source), target[0].shape[0], self.decoder.output_size, device=self.device)
         encoded_sentence = self.encoder(source, context)
         max_length = target[0].shape[0]
@@ -143,7 +146,7 @@ class LSTMSeq2Seq(nn.Module):
         logging.debug("Target {}".format(target[:, 0].shape))
         decoder_input = target[:, 0]
         decoder_hidden = encoded_sentence.unsqueeze(0)
-
+        loss = 0.
         for t in range(max_length):
             logging.debug("Decoder input: {}".format(decoder_input.shape))
             output, hidden = self.decoder(decoder_input, decoder_hidden)
@@ -151,7 +154,9 @@ class LSTMSeq2Seq(nn.Module):
             logging.debug("Output shape: {}".format(output.shape))
             logging.debug("Hidden: {}".format(hidden.shape))
             outputs[:, t] = output
-            # teacher_force = random.random() < teacher_forcing_ratio
-            decoder_input = output.squeeze(0).argmax(1)
+            teacher_force = random.random() < teacher_forcing_ratio
+            argmax = output.squeeze(0).argmax(1)
+            decoder_input = target[:, t] if teacher_force else argmax
             logging.debug("Decoder input shape: {}".format(decoder_input.shape))
-        return outputs
+            loss += loss_func(output.squeeze(0), target[:, t])
+        return outputs, loss

@@ -135,7 +135,7 @@ def create_memnet_model(args, utt_vocab, fact_vocab):
     num_directions = 2 if args.bidirectional else 1
     fact_encoder = memnet.FactEncoder(
         input_size=len(fact_vocab),
-        embed_size=args.embed_size * num_directions)
+        embed_size=args.embed_size * num_directions )
 
     input_encoder = memnet.InputEncoder(
         sentence_encoder,
@@ -144,7 +144,7 @@ def create_memnet_model(args, utt_vocab, fact_vocab):
     decoder = memnet.Decoder(
         output_size=len(utt_vocab),
         embed_size=args.embed_size,
-        hidden_size=args.word_hidden_size * num_directions,
+        hidden_size=args.word_hidden_size * num_directions * args.num_layers,
         bidirectional=False)
 
     seq2seq = memnet.LSTMSeq2Seq(input_encoder, decoder, args.device)
@@ -159,7 +159,7 @@ def base_parser():
         default="holle/")
     parser.add_argument("--n_epochs", default=10, 
         type=int, help="Number of epochs to train the model for")
-    parser.add_argument('--learning_rate', default=0.001, 
+    parser.add_argument('--learning_rate', default=0.1, 
         type=float, help='Learning rate for the model')
     parser.add_argument('--train_batch_size', default=16, 
         type=int, help='Batch size for train')
@@ -209,7 +209,7 @@ def memnet_parser():
         type=int, help="Token embedding dimension")
     parser.add_argument("--bidirectional", default=True,
         type=bool, help="Bidirectional model config")
-    parser.add_argument("--num_layers", default=2,
+    parser.add_argument("--num_layers", default=1,
         type=int, help="Number of layers for models")
     parser.add_argument("--dropout", default=0.1,
         type=float, help="Dropout probability for weights")

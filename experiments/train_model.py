@@ -93,12 +93,14 @@ def train_memnet_model(model, optimizer, loss_func, loaders, args):
         model.train()
         for batch_idx, batch in enumerate(loaders.train):
             optimizer.zero_grad()
-            y_pred = model(batch['x_data'], batch['x_facts'], batch['y_target'])
+            y_pred, loss = model(batch['x_data'], batch['x_facts'], batch['y_target'], loss_func, 0.)
+            # logging.debug("y_pred: {}".format(y_pred[:, 1:].shape))
+            # [batch_size, seq_len, n_classes]
+            # reshaped_target = batch['y_target'][:, 1:]
+            # logging.debug("y_target: {}".format(reshaped_target.shape))
+            # [batch_size, seq_len]
 
-            out_size = y_pred.shape[-1]
-            reshaped_target = batch['y_target'][1:].flatten()
-
-            loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
+            # loss = loss_func(y_pred[:, 1:], reshaped_target)
             loss.backward()
             nn.utils.clip_grad_value_(model.parameters(), args.max_norm)
             minibatch_loss = loss.item()
@@ -119,10 +121,10 @@ def train_memnet_model(model, optimizer, loss_func, loaders, args):
         model.eval()
         with torch.no_grad():
             for batch_idx, batch in enumerate(loaders.dev):
-                y_pred = model(batch['x_data'], batch['x_facts'], batch['y_target'], 0.)
-                out_size = y_pred.shape[-1]
-                reshaped_target = batch['y_target'][1:].flatten()
-                loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
+                y_pred, loss = model(batch['x_data'], batch['x_facts'], batch['y_target'], loss_func,  0.)
+                # out_size = y_pred.shape[-1]
+                # reshaped_target = batch['y_target'][1:].flatten()
+                # loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
 
                 minibatch_loss = loss.item()
                 validation_loss += (minibatch_loss - validation_loss) / (batch_idx + 1)
@@ -136,10 +138,10 @@ def train_memnet_model(model, optimizer, loss_func, loaders, args):
     model.eval()
     with torch.no_grad():
         for batch_idx, batch in enumerate(loaders.test):
-            y_pred = model(batch['x_data'], batch['x_facts'], batch['y_target'], 0.)
-            out_size = y_pred.shape[-1]
-            reshaped_target = batch['y_target'][1:].flatten()
-            loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
+            y_pred, loss = model(batch['x_data'], batch['x_facts'], batch['y_target'], loss_func,  0.)
+            # out_size = y_pred.shape[-1]
+            # reshaped_target = batch['y_target'][1:].flatten()
+            # loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
             minibatch_loss = loss.item()
             test_loss += (minibatch_loss - test_loss) / (batch_idx + 1)
         logging.info("Test Loss: {:.3f}".format(test_loss))
