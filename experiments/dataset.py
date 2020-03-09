@@ -48,6 +48,8 @@ class MemNetDataset(Dataset):
         self.factvectorizer = factvectorizer
         self.device = device
 
+        self.fact_size = max([len(d['facts']) for d in data])
+
     def __getitem__(self, index):
         context = self.data[index]['context']
         response = self.data[index]['response']
@@ -56,7 +58,9 @@ class MemNetDataset(Dataset):
         x_data = self.vectorizer.vectorize(" ".join(context), self.device)
 
         x_lengths = [len(c) for c in context]
-        x_facts = torch.stack([self.factvectorizer.vectorize(c, self.device) for c in facts])
+        x_facts = torch.zeros(self.fact_size, len(self.factvectorizer.vocab), device=self.device)
+        for i, f in enumerate(facts):
+            x_facts[i] = self.factvectorizer.vectorize(f, self.device)
         y_target = self.vectorizer.vectorize(response, self.device)
 
         return {

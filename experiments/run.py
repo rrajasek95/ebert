@@ -157,7 +157,7 @@ def base_parser():
         default="holle/")
     parser.add_argument("--n_epochs", default=10, 
         type=int, help="Number of epochs to train the model for")
-    parser.add_argument('--learning_rate', default=0.1, 
+    parser.add_argument('--learning_rate', default=0.001, 
         type=float, help='Learning rate for the model')
     parser.add_argument('--train_batch_size', default=16, 
         type=int, help='Batch size for train')
@@ -165,7 +165,7 @@ def base_parser():
         type=int, help='Batch size for validation')
     parser.add_argument('--test_batch_size', default=16, 
         type=int, help='Batch size for test')
-    parser.add_argument('--model', default="hred",
+    parser.add_argument('--model', default="memnet",
         choices=['hred', 'memnet'], help='Model to train')
     parser.add_argument('--checkpoint_dir', default="checkpoints/",
         help="Path to save model checkpoints to")

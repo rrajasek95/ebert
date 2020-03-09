@@ -13,7 +13,7 @@ def collate_hred(batch_list, vectorizer):
     ys = [item['y_target'] for item in batch_list]
     ylens = torch.Tensor([len(y) for y in ys])
     ys_padded = nn.utils.rnn.pad_sequence(ys, batch_first=True, padding_value=vectorizer.pad_idx)
-
+    
     for item in batch_list:
         batch_dict['x_data'].append(item['x_data'])
     batch_dict['y_target'] = ys_padded
@@ -22,14 +22,16 @@ def collate_hred(batch_list, vectorizer):
 
 def collate_memnet(batch_list, utt_vec, fact_vec):
     batch_dict = defaultdict(list)
+    xs = [item['x_data'] for item in batch_list]
+    xlens = torch.Tensor([len(x) for x in xs])
     ys = [item['y_target'] for item in batch_list]
     ylens = torch.Tensor([len(y) for y in ys])
+    xs_padded = nn.utils.rnn.pad_sequence(xs, batch_first=True, padding_value=utt_vec.pad_idx)
     ys_padded = nn.utils.rnn.pad_sequence(ys, batch_first=True, padding_value=utt_vec.pad_idx)
 
-    for item in batch_list:
-        batch_dict['x_data'].append(item['x_data'])
-        batch_dict['x_facts'].append(item['x_facts'])
-
+    facts = torch.stack([item['x_facts'] for item in batch_list])
+    batch_dict['x_facts'] = facts
+    batch_dict['x_data'] = xs_padded
     batch_dict['y_target'] = ys_padded
 
     return batch_dict

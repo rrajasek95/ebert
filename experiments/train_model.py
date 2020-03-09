@@ -3,6 +3,7 @@ import torch
 import torch.nn as nn
 import torch.utils.tensorboard as tensorboard
 import os
+import math
 
 def checkpoint_model(model, args, suffix):
     file_name = "{}_{}.pth".format(args.model, suffix)
@@ -50,7 +51,7 @@ def train_hred_model(model, optimizer, loss_func, loaders, args):
         validation_loss = 0.
         model.eval()
         for batch_idx, batch in enumerate(loaders.val):
-            y_pred = model(batch['x_data'], batch['y_target'], 0.)
+            y_pred = model(batch['x_data'], batch['y_target'])
             out_size = y_pred.shape[-1]
             reshaped_target = batch['y_target'][1:].flatten()
             loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
@@ -69,7 +70,7 @@ def train_hred_model(model, optimizer, loss_func, loaders, args):
     test_loss = 0.
     model.eval()
     for batch_idx, batch in enumerate(loaders.test):
-        y_pred = model(batch['x_data'], batch['y_target'], 0.)
+        y_pred = model(batch['x_data'], batch['y_target'])
         out_size = y_pred.shape[-1]
         reshaped_target = batch['y_target'][1:].flatten()
         loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
