@@ -100,7 +100,7 @@ def train_memnet_model(model, optimizer, loss_func, loaders, args):
 
             loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
             loss.backward()
-            
+            nn.utils.clip_grad_value_(model.parameters(), args.max_norm)
             minibatch_loss = loss.item()
             logging.info("minibatch_loss Loss: {:.3f}".format(minibatch_loss))
             writer.add_scalar('MinibatchLoss/train', train_loss, step_idx)
@@ -117,27 +117,29 @@ def train_memnet_model(model, optimizer, loss_func, loaders, args):
 
         validation_loss = 0.
         model.eval()
-        for batch_idx, batch in enumerate(loaders.dev):
+        with torch.no_grad():
+            for batch_idx, batch in enumerate(loaders.dev):
+                y_pred = model(batch['x_data'], batch['x_facts'], batch['y_target'], 0.)
+                out_size = y_pred.shape[-1]
+                reshaped_target = batch['y_target'][1:].flatten()
+                loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
+
+                minibatch_loss = loss.item()
+                validation_loss += (minibatch_loss - validation_loss) / (batch_idx + 1)
+            logging.info("Validation Loss: {:.3f}".format(validation_loss))
+            writer.add_scalar('Loss/val', validation_loss, epoch_idx)
+            writer.add_scalar('Perplexity/val', math.exp(validation_loss), epoch_idx)
+            if validation_loss < lowest_validation_loss:
+                checkpoint_model(model, args, "best")
+
+    test_loss = 0.
+    model.eval()
+    with torch.no_grad():
+        for batch_idx, batch in enumerate(loaders.test):
             y_pred = model(batch['x_data'], batch['x_facts'], batch['y_target'], 0.)
             out_size = y_pred.shape[-1]
             reshaped_target = batch['y_target'][1:].flatten()
             loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
-
             minibatch_loss = loss.item()
-            validation_loss += (minibatch_loss - validation_loss) / (batch_idx + 1)
-        logging.info("Validation Loss: {:.3f}".format(validation_loss))
-        writer.add_scalar('Loss/val', validation_loss, epoch_idx)
-        writer.add_scalar('Perplexity/val', math.exp(validation_loss), epoch_idx)
-        if validation_loss < lowest_validation_loss:
-            checkpoint_model(model, args, "best")
-
-    test_loss = 0.
-    model.eval()
-    for batch_idx, batch in enumerate(loaders.test):
-        y_pred = model(batch['x_data'], batch['x_facts'], batch['y_target'], 0.)
-        out_size = y_pred.shape[-1]
-        reshaped_target = batch['y_target'][1:].flatten()
-        loss = loss_func(y_pred[1:].view(-1, out_size), reshaped_target)
-        minibatch_loss = loss.item()
-        test_loss += (minibatch_loss - test_loss) / (batch_idx + 1)
-    logging.info("Test Loss: {:.3f}".format(test_loss))
+            test_loss += (minibatch_loss - test_loss) / (batch_idx + 1)
+        logging.info("Test Loss: {:.3f}".format(test_loss))

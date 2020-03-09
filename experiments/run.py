@@ -166,6 +166,7 @@ def base_parser():
         type=int, help='Batch size for validation')
     parser.add_argument('--test_batch_size', default=16, 
         type=int, help='Batch size for test')
+    parser.add_argument('--max_norm', default=1., type=float, help="Clipping value for gradient")
     parser.add_argument('--model', default="memnet",
         choices=['hred', 'memnet'], help='Model to train')
     parser.add_argument('--checkpoint_dir', default="checkpoints/",
