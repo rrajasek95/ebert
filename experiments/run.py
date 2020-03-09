@@ -131,10 +131,10 @@ def create_memnet_model(args, utt_vocab, fact_vocab):
         hidden_size=args.word_hidden_size,
         bidirectional=args.bidirectional,
         dropout=args.dropout)
-
+    num_directions = 2 if args.bidirectional else 1
     fact_encoder = memnet.FactEncoder(
         input_size=len(fact_vocab),
-        embed_size=args.embed_size)
+        embed_size=args.embed_size * num_directions)
 
     input_encoder = memnet.InputEncoder(
         sentence_encoder,
@@ -143,7 +143,8 @@ def create_memnet_model(args, utt_vocab, fact_vocab):
     decoder = memnet.Decoder(
         output_size=len(utt_vocab),
         embed_size=args.embed_size,
-        hidden_size=args.word_hidden_size)
+        hidden_size=args.word_hidden_size * num_directions,
+        bidirectional=False)
 
     seq2seq = memnet.LSTMSeq2Seq(input_encoder, decoder, args.device)
 
@@ -204,7 +205,7 @@ def memnet_parser():
         type=int, help="Hidden size of decoder")
     parser.add_argument("--embed_size", default=100,
         type=int, help="Token embedding dimension")
-    parser.add_argument("--bidirectional", default=False,
+    parser.add_argument("--bidirectional", default=True,
         type=bool, help="Bidirectional model config")
     parser.add_argument("--dropout", default=0.1,
         type=float, help="Dropout probability for weights")

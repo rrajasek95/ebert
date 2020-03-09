@@ -26,7 +26,7 @@ class SentenceEncoder(nn.Module):
         dropout):
         super(SentenceEncoder, self).__init__()
         self.embedding = nn.Embedding(input_size, embed_size)
-        self.rnn = nn.LSTM(
+        self.rnn = nn.GRU(
             input_size=embed_size, 
             hidden_size=hidden_size, 
             batch_first=True, bidirectional=bidirectional)
@@ -38,7 +38,7 @@ class SentenceEncoder(nn.Module):
         embedded = self.embedding(x_in)
         # embedded: [batch_size, seq_len, embed_size]
         logging.debug("embedded: {}".format(embedded.shape))
-        output, (hidden, cell) = self.rnn(embedded)
+        output, hidden = self.rnn(embedded)
         logging.debug("hidden: {}".format(hidden.shape))
 
         # hidden : [num_dirs, batch_size, hidden_size]
@@ -74,7 +74,7 @@ class InputEncoder(nn.Module):
     def forward(self, sentence, context):
         logging.debug("Inputencoder: {}".format(sentence.shape))
         logging.debug("Inputencoder context: {}".format(context.shape))
-        encoded_sentence = self.sentence_encoder(sentence).transpose(0, 1).transpose(1, 2)
+        encoded_sentence = self.sentence_encoder(sentence).transpose(0, 1).reshape(sentence.shape[0], -1, 1)
         # [num_dirs, batch_size, hidden_size]
 
         encoded_key, encoded_value = self.fact_encoder(context)
@@ -100,11 +100,13 @@ class Decoder(nn.Module):
     def __init__(self, 
         output_size,
         embed_size,
-        hidden_size):
+        hidden_size,
+        bidirectional):
         super(Decoder, self).__init__()
         self.embedding = nn.Embedding(output_size, embed_size)
         self.rnn = nn.GRU(embed_size, hidden_size, 
-            batch_first=True)
+            batch_first=True,
+            bidirectional=bidirectional)
         self.fc_out = nn.Linear(hidden_size, output_size)
         self.output_size = output_size
 
