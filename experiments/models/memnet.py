@@ -22,6 +22,7 @@ class SentenceEncoder(nn.Module):
         input_size,
         embed_size,
         hidden_size,
+        num_layers,
         bidirectional,
         dropout):
         super(SentenceEncoder, self).__init__()

@@ -129,6 +129,7 @@ def create_memnet_model(args, utt_vocab, fact_vocab):
         input_size=len(utt_vocab),
         embed_size=args.embed_size,
         hidden_size=args.word_hidden_size,
+        num_layers=args.num_layers,
         bidirectional=args.bidirectional,
         dropout=args.dropout)
     num_directions = 2 if args.bidirectional else 1
@@ -208,6 +209,8 @@ def memnet_parser():
         type=int, help="Token embedding dimension")
     parser.add_argument("--bidirectional", default=True,
         type=bool, help="Bidirectional model config")
+    parser.add_argument("--num_layers", default=2,
+        type=int, help="Number of layers for models")
     parser.add_argument("--dropout", default=0.1,
         type=float, help="Dropout probability for weights")
 
