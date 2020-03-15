@@ -4,3 +4,10 @@ __pycache__/
 *.pth
 *.bin
 *.json
+
+experiments/.ipynb_checkpoints/
+experiments/datasets-CMU_DoG/
+experiments/holle/
+experiments/other_code/
+experiments/runs/
+
